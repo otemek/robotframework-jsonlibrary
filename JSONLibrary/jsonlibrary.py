@@ -7,8 +7,9 @@ from copy import deepcopy
 from robot.api import logger
 from robot.utils.asserts import fail
 from jsonpath_ng import Index, Fields
-from jsonpath_ng.ext import parse as parse_ng
-from jsonpath_ng.exceptions import JsonPathParserError
+# from jsonpath_ng.ext import parse as parse_ng
+# from jsonpath_ng.exceptions import JsonPathParserError
+from .parsers.jsonpath import JsonPathNgExt
 
 __author__ = "Traitanit Huangsri"
 __email__ = "traitanit.hua@gmail.com"
@@ -63,17 +64,12 @@ class JSONLibrary:
     ROBOT_LIBRARY_DOC_FORMAT = "ROBOT"
     ROBOT_EXIT_ON_FAILURE = True
 
-    @staticmethod
-    def _parse(json_path):
-        try:
-            return parse_ng(json_path)
-        except JsonPathParserError as e:
-            fail(
-                "Parser failed to understand syntax '{}'. error message: "
-                "\n{}\n\nYou may raise an issue on https://github.com/h2non/jsonpath-ng".format(
-                    json_path, e
-                )
-            )
+    def __init__(self, json_lib="jsonpath_ng.ext"):
+        self.json_lib = JsonPathNgExt()
+
+    # @staticmethod
+    def _parse(self, json_path):
+        return self.json_lib.parse(json_path)
 
     @staticmethod
     def load_json_from_file(file_name, encoding=None):
