@@ -1,17 +1,17 @@
+from typing import Union
 from jsonpath_ng import Index, Fields
-from jsonpath_ng.ext import parse as parse_ng
+from jsonpath_ng.ext import parse
 from jsonpath_ng.exceptions import JsonPathParserError
 from robot.utils.asserts import fail
 
-
-class JsonPathNg:
-    ...
+from JSONLibrary.parsers.definitions import JsonQuery
 
 
-class JsonPathNgExt:
+
+class JsonPathNgExt(JsonQuery):
     def parse(self, expression: str):
         try:
-            return parse_ng(expression)
+            return parse(path=expression)
         except JsonPathParserError as ex:
             fail(
                 "Parser failed to understand syntax '{}'. error message: "
@@ -19,3 +19,6 @@ class JsonPathNgExt:
                     expression, ex
                 )
             )
+
+    def query(self, expression: str, document) -> Union[dict, list]:
+        return self.parse(expression=expression).find(document)     #type: ignore

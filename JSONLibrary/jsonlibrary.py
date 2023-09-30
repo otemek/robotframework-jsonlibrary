@@ -7,12 +7,21 @@ from copy import deepcopy
 from robot.api import logger
 from robot.utils.asserts import fail
 from jsonpath_ng import Index, Fields
+
+from JSONLibrary.parsers.jmespath import JmesPath
+
 # from jsonpath_ng.ext import parse as parse_ng
 # from jsonpath_ng.exceptions import JsonPathParserError
 from .parsers.jsonpath import JsonPathNgExt
+from .exceptions import UnknownJsonParserLibrary
 
 __author__ = "Traitanit Huangsri"
 __email__ = "traitanit.hua@gmail.com"
+
+JSON_LIB_MAPPING = {
+    "jsonpath_ng.ext": JsonPathNgExt,
+    "jmespath": JmesPath,
+}
 
 
 class JSONLibrary:
@@ -65,11 +74,10 @@ class JSONLibrary:
     ROBOT_EXIT_ON_FAILURE = True
 
     def __init__(self, json_lib="jsonpath_ng.ext"):
-        self.json_lib = JsonPathNgExt()
-
-    # @staticmethod
-    def _parse(self, json_path):
-        return self.json_lib.parse(json_path)
+        try:
+            self.json_lib = JSON_LIB_MAPPING[json_lib]()
+        except KeyError as ex:
+            raise UnknownJsonParserLibrary()
 
     @staticmethod
     def load_json_from_file(file_name, encoding=None):
@@ -108,7 +116,7 @@ class JSONLibrary:
         | ${dict}=  | Create Dictionary    | latitude=13.1234 | longitude=130.1234 |
         | ${json}=  |  Add Object To Json  | ${json}          | $..address         |  ${dict} |
         """
-        json_path_expr = self._parse(json_path)
+        json_path_expr = self.json_lib.parse(json_path)
         json_object_cpy = deepcopy(json_object)
         object_to_add_cpy = deepcopy(object_to_add)
         rv = json_path_expr.find(json_object_cpy)
@@ -121,7 +129,7 @@ class JSONLibrary:
         else:
             parent_json_path = ".".join(json_path.split(".")[:-1])
             child_name = json_path.split(".")[-1]
-            json_path_expr = self._parse(parent_json_path)
+            json_path_expr = self.json_lib.parse(parent_json_path)
             rv = json_path_expr.find(json_object_cpy)
             if len(rv):
                 for match in rv:
@@ -145,12 +153,13 @@ class JSONLibrary:
         | ${values}=  |  Get Value From Json  | ${json} |  $..phone_number |
         | ${values}=  |  Get Value From Json  | ${json} |  $..missing | fail_on_empty=${True} |
         """
-        json_path_expr = self._parse(json_path)
-        rv = json_path_expr.find(json_object)
+        result = self.json_lib.query(expression=json_path, document=json_object)
+        # json_path_expr = self.json_lib.parse(json_path)
+        # rv = json_path_expr.find(json_object)
         # optional: make the keyword fails if nothing was return
-        if fail_on_empty is True and (rv is None or len(rv) == 0):
+        if fail_on_empty is True and (result is None or len(result) == 0):
             fail(f"Get Value From Json keyword failed to find a value for {json_path}")
-        return [match.value for match in rv]
+        return [match.value for match in result]
 
     def update_value_to_json(self, json_object, json_path, new_value):
         """Update value to JSON using JSONPath
@@ -165,7 +174,7 @@ class JSONLibrary:
         Examples:
         | ${json_object}=  |  Update Value To Json | ${json} |  $..address.streetAddress  |  Ratchadapisek Road |
         """
-        json_path_expr = self._parse(json_path)
+        json_path_expr = self.json_lib.parse(json_path)
         json_object_cpy = deepcopy(json_object)
         for match in json_path_expr.find(json_object_cpy):
             path = match.path
@@ -187,7 +196,7 @@ class JSONLibrary:
         Examples:
         | ${json_object}=  |  Delete Object From Json | ${json} |  $..address.streetAddress  |
         """
-        json_path_expr = self._parse(json_path)
+        json_path_expr = self.json_lib.parse(json_path)
         json_object_cpy = deepcopy(json_object)
         for match in reversed(json_path_expr.find(json_object_cpy)):
             path = match.path
