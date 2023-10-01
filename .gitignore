@@ -18,6 +18,7 @@ __pycache__
 red.xml
 /libspecs/
 /Results/
+tmp/
 
 #pipenv/virtualenv
 .venv/

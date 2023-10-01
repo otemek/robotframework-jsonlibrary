@@ -7,6 +7,7 @@ from copy import deepcopy
 from robot.api import logger
 from robot.utils.asserts import fail
 from jsonpath_ng import Index, Fields
+from JSONLibrary.parsers.definitions import JsonQuery
 
 from JSONLibrary.parsers.jmespath import JmesPath
 
@@ -75,7 +76,7 @@ class JSONLibrary:
 
     def __init__(self, json_lib="jsonpath_ng.ext"):
         try:
-            self.json_lib = JSON_LIB_MAPPING[json_lib]()
+            self.json_lib: JsonQuery = JSON_LIB_MAPPING[json_lib]()
         except KeyError as ex:
             raise UnknownJsonParserLibrary()
 
@@ -116,10 +117,9 @@ class JSONLibrary:
         | ${dict}=  | Create Dictionary    | latitude=13.1234 | longitude=130.1234 |
         | ${json}=  |  Add Object To Json  | ${json}          | $..address         |  ${dict} |
         """
-        json_path_expr = self.json_lib.parse(json_path)
         json_object_cpy = deepcopy(json_object)
         object_to_add_cpy = deepcopy(object_to_add)
-        rv = json_path_expr.find(json_object_cpy)
+        rv = self.json_lib.query(document=json_object_cpy, expression=json_path)
         if len(rv):
             for match in rv:
                 if type(match.value) is dict:
@@ -129,8 +129,7 @@ class JSONLibrary:
         else:
             parent_json_path = ".".join(json_path.split(".")[:-1])
             child_name = json_path.split(".")[-1]
-            json_path_expr = self.json_lib.parse(parent_json_path)
-            rv = json_path_expr.find(json_object_cpy)
+            rv = self.json_lib.query(document=json_object_cpy, expression=parent_json_path)
             if len(rv):
                 for match in rv:
                     match.value.update({child_name: object_to_add_cpy})
@@ -174,9 +173,9 @@ class JSONLibrary:
         Examples:
         | ${json_object}=  |  Update Value To Json | ${json} |  $..address.streetAddress  |  Ratchadapisek Road |
         """
-        json_path_expr = self.json_lib.parse(json_path)
         json_object_cpy = deepcopy(json_object)
-        for match in json_path_expr.find(json_object_cpy):
+        result = self.json_lib.query(expression=json_path, document=json_object_cpy)
+        for match in result:
             path = match.path
             if isinstance(path, Index):
                 match.context.value[match.path.index] = new_value
@@ -196,9 +195,9 @@ class JSONLibrary:
         Examples:
         | ${json_object}=  |  Delete Object From Json | ${json} |  $..address.streetAddress  |
         """
-        json_path_expr = self.json_lib.parse(json_path)
         json_object_cpy = deepcopy(json_object)
-        for match in reversed(json_path_expr.find(json_object_cpy)):
+        result = self.json_lib.query(expression=json_path, document=json_object_cpy)
+        for match in reversed(result):
             path = match.path
             if isinstance(path, Index):
                 del match.context.value[match.path.index]
@@ -320,6 +319,6 @@ class JSONLibrary:
         try:
             jsonschema.validate(json_object, schema)
         except jsonschema.ValidationError as e:
-            fail(f"{e.message}, Schema path: {' > '.join(e.schema_path)}")
+            fail(f"{e.message}, Schema path: {' > '.join([str(item) for item in e.schema_path])}")
         except jsonschema.SchemaError as e:
             fail(f"Json schema error: {e}")

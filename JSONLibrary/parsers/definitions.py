@@ -1,6 +1,6 @@
-from typing import Protocol, Union
+from typing import Any, Protocol
 
 
 class JsonQuery(Protocol):
-    def query(self, expression: str, document: dict) -> Union[dict, list]:
+    def query(self, expression: str, document: dict) -> Any:
         ...
