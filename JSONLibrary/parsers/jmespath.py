@@ -1,16 +1,19 @@
-from typing import Callable, Optional, Union
+from typing import Optional, Union
 
-from robot.utils.asserts import fail
+# from robot.utils.asserts import fail
 from jmespath import Options, compile, search
 from jmespath.exceptions import ParseError
+from jmespath.parser import ParsedResult
+
+from JSONLibrary.parsers.definitions import JsonQuery
 
 
-class JmesPath:
-    def parse(self, expression: str):
+class JmesPath(JsonQuery):
+    def parse(self, expression: str) -> ParsedResult:
         try:
             return compile(expression=expression)
         except ParseError as ex:
-            fail(
+            raise AssertionError(
                 f"""Parser failed to understand syntax '{expression}'.\nerror message: "
                 {ex}\n
                 """

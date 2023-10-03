@@ -1,23 +1,26 @@
 import json
 import pytest
+from JSONLibrary.parsers.definitions import JsonQuery
 from JSONLibrary.parsers.jmespath import JmesPath
 from pathlib import Path
+from jmespath.parser import ParsedResult
 
-TEST_DIR = Path(__file__).parent
+TEST_FILE = Path(__file__).parent / ".." / "json" / "example.json"
 
-
-def json_file():
-    return TEST_DIR.read_text()
+# @pytest.fixture(scope="module")
+# def json_file():
+#     return TEST_DIR.read_text()
 
 
 @pytest.fixture(scope="module")
-def lib_jmespath() -> JmesPath:
+def lib_jmespath() -> JsonQuery:
     return JmesPath()
 
 
 @pytest.fixture(scope="module")
-def json_sample(json_file) -> dict:
-    return json.load(json_file)
+def json_sample() -> dict:
+    with open(TEST_FILE, "r") as fl:
+        return json.load(fl)
 
 
 def test_can_create_Jmespath_implementation(lib_jmespath) -> None:
@@ -33,7 +36,9 @@ def test_can_create_Jmespath_implementation(lib_jmespath) -> None:
     ],
 )
 def test_can_parse_jmespath_syntax_correctly(lib_jmespath, expression):
-    assert lib_jmespath.parse(expression)
+    parsed_expression = lib_jmespath.parse(expression)
+    assert type(parsed_expression) == ParsedResult
+
 
 @pytest.mark.parametrize(
     ["expression"],
@@ -46,3 +51,15 @@ def test_can_parse_jmespath_syntax_correctly(lib_jmespath, expression):
 def test_raise_error_on_wrong_synstax_expression(lib_jmespath, expression):
     with pytest.raises(AssertionError) as ex:
         lib_jmespath.parse(expression)
+    assert ex.match(f"Parser failed to understand syntax")
+
+
+@pytest.mark.parametrize(
+    ["expression", "expected"],
+    [
+        ["firstName", "John"]
+    ]
+)
+def test_can_query_expected_data(lib_jmespath: JsonQuery, json_sample: dict, expression, expected):
+    actual = lib_jmespath.query(expression=expression, document=json_sample)
+    assert actual == expected
