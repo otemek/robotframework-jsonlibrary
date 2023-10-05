@@ -13,7 +13,7 @@ from JSONLibrary.parsers.jmespath import JmesPath
 
 # from jsonpath_ng.ext import parse as parse_ng
 # from jsonpath_ng.exceptions import JsonPathParserError
-from .parsers.jsonpath import JsonPathNgExt
+from .parsers.jsonpathng import JsonPathNgExt
 from .exceptions import UnknownJsonParserLibrary
 
 __author__ = "Traitanit Huangsri"

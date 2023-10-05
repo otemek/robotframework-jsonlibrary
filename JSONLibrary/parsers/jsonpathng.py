@@ -7,7 +7,6 @@ from robot.utils.asserts import fail
 from JSONLibrary.parsers.definitions import JsonQuery
 
 
-
 class JsonPathNgExt(JsonQuery):
     def parse(self, expression: str):
         try:
@@ -20,5 +19,7 @@ class JsonPathNgExt(JsonQuery):
                 )
             )
 
-    def query(self, expression: str, document) -> Union[dict, list]:
-        return self.parse(expression=expression).find(document)     #type: ignore
+
+    def query(self, expression: str, document) -> list:
+        return self.parse(expression=expression).find(document)  # type: ignore
+
